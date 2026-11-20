@@ -16,7 +16,7 @@ For Codex, append `agents/AGENTS.md` to your `~/.codex/AGENTS.md` (or a project'
 
 Either agent can also use the CLI as MCP tools: `claude mcp add rokku -- rokku mcp`, or `codex mcp add rokku -- rokku mcp`. For Codex, two settings matter: if the server's `env` sets `PATH`, it must include the folder `node` is in (otherwise the tools silently don't appear), and `codex exec` needs `default_tools_approval_mode = "approve"` on the server, since its default approval of `never` blocks every tool call. Under MCP, commands that need a secret value refuse and ask the user to run them in a terminal. A tool call can pass `yes` to skip the confirmation of a delete or removal, since the agent asks the user before calling the tool; in a terminal those still ask first.
 
-The default API is test (`https://test-api.rokku.ai`). For production: `rokku login --api https://api.rokku.ai`.
+The default API is production (`https://api.rokku.ai`). For the test environment: `rokku login --api https://test-api.rokku.ai`.
 
 ## Layout
 
