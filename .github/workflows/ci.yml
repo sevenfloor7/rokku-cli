@@ -1,0 +1,25 @@
+name: CI
+on:
+  push:
+    branches: [master]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ["20.11", "22", "24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+      - name: Package installs and runs
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          npm install -g --prefix "$RUNNER_TEMP/prefix" "$RUNNER_TEMP"/rokku-cli-*.tgz
+          "$RUNNER_TEMP/prefix/bin/rokku" help | grep -q "rokku ask"
+          echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | "$RUNNER_TEMP/prefix/bin/rokku" mcp | grep -q '"name":"rokku"'
