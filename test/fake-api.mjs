@@ -56,9 +56,9 @@ export async function fakeApi(handlers) {
   const env = Object.fromEntries(Object.entries({...process.env, ROKKU_CONFIG: config, ROKKU_TOKEN_STORE: "file", ROKKU_API: `http://127.0.0.1:${port}`})
     .filter(([name]) => !/^(https?|no|all)_proxy$/i.test(name)));
   const run = (args, input, extra = {}) => new Promise(done => {
-    const child = execFile("node", [CLI, ...args], {env: {...env, ...extra}}, (error, stdout, stderr) => done({code: error ? error.code : 0, stdout: stdout.trim(), stderr: stderr.trim()}));
+    const child = execFile("node", [CLI, ...args], {env: {...env, ...extra}, timeout: 60_000}, (error, stdout, stderr) => done({code: error ? error.code : 0, stdout: stdout.trim(), stderr: stderr.trim()}));
     child.stdin.end(input);
   });
   const last = route => requests.filter(r => r.route === route).at(-1);
-  return {requests, run, last, env, close: () => server.close()};
+  return {requests, run, last, env, close: () => { server.closeAllConnections(); server.close(); }};
 }
