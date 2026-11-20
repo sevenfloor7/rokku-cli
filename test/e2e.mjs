@@ -62,7 +62,7 @@ const gateway = createServer(async (request, response) => {
 });
 const gatewayPort = await listen(gateway);
 
-const AGENT = randomUUID(), CONV = randomUUID(), SOUK = randomUUID(), S_TITLE = "Souk Decisions";
+const AGENT = randomUUID(), CONV = randomUUID(), BOARD = randomUUID(), S_TITLE = "Team Decisions";
 const b64 = text => Buffer.from(text).toString("base64");
 state.latest = 3;
 state.stored = {3: {manifest: {schema_version: 2, entrypoint: "worker.mjs", modules: ["worker.mjs"], assets: ["index.html", "old.css"]},
@@ -118,7 +118,7 @@ const apiServer = createServer(async (request, response) => {
     return json(response, 200, ok({artifact_id: "new-1", artifact_version: 1, title: input.title,
       deployment: {deployment_state: "prepared"}}));
   }
-  const versionsPath = `/v1/agents/${AGENT}/artifacts/${SOUK}/versions`;
+  const versionsPath = `/v1/agents/${AGENT}/artifacts/${BOARD}/versions`;
   if (url.pathname === `${versionsPath}:check`) return json(response, 200, ok({errors: [], warnings: []}));
   if (url.pathname === versionsPath && request.method === "GET") {
     const all = Array.from({length: state.latest}, (_, i) => ({artifact_version: state.latest - i, title: S_TITLE, description: null,
@@ -131,7 +131,7 @@ const apiServer = createServer(async (request, response) => {
     assert.equal(input.change_note, "test change");
     state.pushed = input; state.latest++;
     state.stored[state.latest] = {files: input.files, manifest: input.manifest};
-    return json(response, 200, ok({artifact_id: SOUK, artifact_version: state.latest, title: S_TITLE, deployment: {deployment_state: "prepared"}}));
+    return json(response, 200, ok({artifact_id: BOARD, artifact_version: state.latest, title: S_TITLE, deployment: {deployment_state: "prepared"}}));
   }
   const version = new RegExp(`^${versionsPath}/(\\d+)(/content)?$`).exec(url.pathname);
   if (version) {
@@ -144,7 +144,7 @@ const apiServer = createServer(async (request, response) => {
   if (url.pathname === `/v1/agents/${AGENT}/widgets` && request.method === "POST") { state.wrote = true; return json(response, 200, ok({})); }
   if (url.pathname === `/v1/agents/${AGENT}/artifacts`)
     return json(response, 200, ok({items: [
-      {artifact_id: SOUK, title: S_TITLE, artifact_type: "html_app", latest_version: state.latest, app_url: `http://127.0.0.1:${gatewayPort}`},
+      {artifact_id: BOARD, title: S_TITLE, artifact_type: "html_app", latest_version: state.latest, app_url: `http://127.0.0.1:${gatewayPort}`},
       {artifact_id: randomUUID(), title: "Notes PDF", artifact_type: "pdf", latest_version: 1, app_url: null},
     ], next_cursor: null}));
   if (url.pathname === `/v1/agents/${AGENT}/conversations/${CONV}/messages` && request.method === "POST") {
@@ -184,30 +184,30 @@ assert.match(state.deviceLabel, /^Rokku CLI on /);
 assert.equal(state.clientKind, "cli", "logs in as a CLI session");
 assert.deepEqual(state.capabilities, {schema_version: 2, client_revision: 1, device_tool_methods: [],
   interaction_protocols: ["choice.v1", "connector.approval.v1", "connector.unreviewed_oauth.v1", "home.artifact_place.v1"]});
-assert.match(await run("creations"), /Souk Decisions .* app/);
+assert.match(await run("creations"), /Team Decisions .* app/);
 assert.equal((await runJson("creations", "--raw")).length, 2, "--raw is a boolean and does not eat arguments");
 assert.equal((await runJson("whoami")).email, "x@example.com");
 await fails(/no live app/, "data", "list", "Notes", "decisions");
 await fails(/No creation matches/, "data", "list", "nope", "decisions");
-await fails(/is exactly/, "data", "put", "souk", "decisions", "d1", "--json", "{}");
+await fails(/is exactly/, "data", "put", "team", "decisions", "d1", "--json", "{}");
 
 // create, read, list across pages, filter, patch, delete
 const created = await runJson("data", "put", S, "decisions", "d1", "--json",
   JSON.stringify({title: "Don't merge #859 yet?", options: ["now", "wait"], status: "pending"}), "--stamp", "created_at");
 assert.equal(created.id, "d1");
 assert.match(created.created_at, /^\d{4}-\d\d-\d\dT/);
-for (const n of [2, 3, 4]) await run("data", "put", S, "decisions", `d${n}`, "--json", JSON.stringify({title: `q${n}`, status: n === 4 ? "answered" : "pending", project: n === 3 ? "rokku" : "souk"}));
+for (const n of [2, 3, 4]) await run("data", "put", S, "decisions", `d${n}`, "--json", JSON.stringify({title: `q${n}`, status: n === 4 ? "answered" : "pending", project: n === 3 ? "rokku" : "team"}));
 const fromStdin = await exec(["data", "put", S, "decisions", "d5", "--file", "-"], JSON.stringify({title: "it's from stdin; $(touch /tmp/x)", status: "withdrawn"}));
 assert.equal(JSON.parse(fromStdin.stdout).title, "it's from stdin; $(touch /tmp/x)");
-const all = await runJson("data", "list", "souk", "decisions");
+const all = await runJson("data", "list", "team", "decisions");
 assert.equal(all.length, 5, "follows next across pages");
-assert.deepEqual((await runJson("data", "list", "souk", "decisions", "--where", "status=pending")).map(r => r.id).sort(), ["d1", "d2", "d3"]);
-assert.deepEqual((await runJson("data", "list", "souk", "decisions", "--where", "status=pending", "--where", "project=rokku")).map(r => r.id), ["d3"], "--where repeats");
-assert.equal((await runJson("data", "list", "souk", "decisions", "--raw"))[0].revision >= 1, true);
+assert.deepEqual((await runJson("data", "list", "team", "decisions", "--where", "status=pending")).map(r => r.id).sort(), ["d1", "d2", "d3"]);
+assert.deepEqual((await runJson("data", "list", "team", "decisions", "--where", "status=pending", "--where", "project=rokku")).map(r => r.id), ["d3"], "--where repeats");
+assert.equal((await runJson("data", "list", "team", "decisions", "--raw"))[0].revision >= 1, true);
 const patched = await runJson("data", "patch", S, "decisions", "d1", "--json", JSON.stringify({status: "answered", answer: {option: "wait"}}));
 assert.equal(patched.title, "Don't merge #859 yet?");
 assert.equal(patched.status, "answered");
-const got = await runJson("data", "get", "souk", "decisions", "d1");
+const got = await runJson("data", "get", "team", "decisions", "d1");
 assert.equal(got.answer.option, "wait");
 assert.equal(got.revision, 2, "one write so far");
 state.raceOnce = true;
@@ -218,40 +218,40 @@ state.raceOnce = true;
 await fails(/conflict/, "data", "put", S, "decisions", "d1", "--json", JSON.stringify({title: "replace"}));
 const kept = await runJson("data", "put", S, "decisions", "d1", "--if-absent", "--json", JSON.stringify({title: "seed again"}));
 assert.equal(kept.skipped, true);
-assert.equal((await runJson("data", "get", "souk", "decisions", "d1")).seen, true, "--if-absent never overwrites");
+assert.equal((await runJson("data", "get", "team", "decisions", "d1")).seen, true, "--if-absent never overwrites");
 await fails(/does not exist/, "data", "patch", S, "decisions", "missing", "--json", "{\"a\":1}");
 await fails(/JSON object/, "data", "put", S, "decisions", "x", "--json", "[1,2]");
 await fails(/looks like JSON/, "data", "put", S, "decisions", "{\"title\":1}");
-await fails(/needs a value/, "data", "list", "souk", "decisions", "--where");
-await fails(/must be a number/, "data", "watch", "souk", "decisions", "--interval", "abc");
+await fails(/needs a value/, "data", "list", "team", "decisions", "--where");
+await fails(/must be a number/, "data", "watch", "team", "decisions", "--interval", "abc");
 assert.match(await run("data", "delete", S, "decisions", "d2"), /Deleted/);
-assert.equal((await runJson("data", "list", "souk", "decisions")).length, 4, "tombstones are hidden");
+assert.equal((await runJson("data", "list", "team", "decisions")).length, 4, "tombstones are hidden");
 const auto = await runJson("data", "put", S, "progress", "--json", JSON.stringify({session: "wiper", status: "working"}));
 assert.match(auto.id, /^[0-9a-f-]{36}$/);
 
 // creation session expiry is renewed transparently; account token refresh on 401
 state.csrfByCookie.clear();
-assert.equal((await runJson("data", "list", "souk", "decisions")).length, 4);
+assert.equal((await runJson("data", "list", "team", "decisions")).length, 4);
 state.rejectAccessOnce = true;
-assert.match(await run("creations"), /Souk Decisions/);
+assert.match(await run("creations"), /Team Decisions/);
 assert.ok(state.refreshed, "refreshed after 401");
 state.csrfByCookie.clear();
-assert.equal((await runJson("data", "list", "souk", "decisions")).length, 4, "re-opens with the refreshed token");
+assert.equal((await runJson("data", "list", "team", "decisions")).length, 4, "re-opens with the refreshed token");
 
 // parallel writers share one config without losing the rotated refresh token
 state.csrfByCookie.clear();
 await Promise.all([...Array(6).keys()].map(n => run("data", "put", S, "progress", `p${n}`, "--json", JSON.stringify({n}))));
 state.rejectAccessOnce = true;
-assert.match(await run("creations"), /Souk Decisions/, "the stored refresh token is still the live one");
+assert.match(await run("creations"), /Team Decisions/, "the stored refresh token is still the live one");
 
 // wait returns at once when the answer already arrived
-assert.equal((await runJson("data", "wait", "souk", "decisions", "d1", "--until", "status=answered", "--timeout", "5")).id, "d1");
-const notYet = await exec(["data", "wait", "souk", "decisions", "d3", "--until", "status=answered", "--timeout", "1", "--interval", "1"]).catch(error => error);
+assert.equal((await runJson("data", "wait", "team", "decisions", "d1", "--until", "status=answered", "--timeout", "5")).id, "d1");
+const notYet = await exec(["data", "wait", "team", "decisions", "d3", "--until", "status=answered", "--timeout", "1", "--interval", "1"]).catch(error => error);
 assert.equal(notYet.code, 2, "wait exits 2 when the record never matches");
 assert.match(notYet.stderr, /not yet/);
 
 // watch --once sees a record written by someone else (the phone)
-const watcher = spawn("node", [CLI, "data", "watch", "souk", "decisions", "--where", "status=answered", "--interval", "1", "--once", "--timeout", "15"], {env});
+const watcher = spawn("node", [CLI, "data", "watch", "team", "decisions", "--where", "status=answered", "--interval", "1", "--once", "--timeout", "15"], {env});
 let watched = "";
 watcher.stdout.on("data", chunk => { watched += chunk; });
 await new Promise(done => setTimeout(done, 1500));
@@ -261,7 +261,7 @@ await DATA.putResult("decisions", {mutationId: randomUUID(), recordId: "d3", exp
 const code = await new Promise(done => watcher.on("exit", done));
 assert.equal(code, 0);
 assert.deepEqual(JSON.parse(watched.trim()), {title: "q3", status: "answered", answer: {text: "go"}, id: "d3"});
-const existing = (await run("data", "watch", "souk", "decisions", "--where", "status=answered", "--include-existing", "--once")).split("\n");
+const existing = (await run("data", "watch", "team", "decisions", "--where", "status=answered", "--include-existing", "--once")).split("\n");
 assert.ok(existing.length >= 2, "--include-existing reports answers that arrived earlier");
 
 // nested --stamp
@@ -297,33 +297,33 @@ for (const name of ["manifest.json", "worker.mjs", "index.html"]) writeFileSync(
 await fails(/not a PNG/, "create", iconless, "--description", "d", "--icon", join(retried, "icon.png"), "--note", "test change");
 
 // pull → edit → push builds on the pulled version; a never-pulled directory must say its base
-const pulledDir = join(mkdtempSync(join(tmpdir(), "rokku-pull-")), "souk");
-assert.match(await run("pull", "souk", pulledDir), /Pulled Souk Decisions v3/);
+const pulledDir = join(mkdtempSync(join(tmpdir(), "rokku-pull-")), "team");
+assert.match(await run("pull", "team", pulledDir), /Pulled Team Decisions v3/);
 assert.equal(readFileSync(join(pulledDir, "index.html"), "utf8"), "<html>v3</html>");
 assert.equal(JSON.parse(readFileSync(join(pulledDir, "manifest.json"), "utf8")).entrypoint, "worker.mjs");
 assert.equal(statSync(join(pulledDir, "worker.mjs")).isFile(), true, "the stored tar has no top-level folder");
-await fails(/not empty/, "pull", "souk", pulledDir);
+await fails(/not empty/, "pull", "team", pulledDir);
 writeFileSync(join(pulledDir, "index.html"), "<html>v4</html>");
 writeFileSync(join(pulledDir, "notes.txt"), "mine, not the creation's");
 const m = JSON.parse(readFileSync(join(pulledDir, "manifest.json"), "utf8"));
 m.assets = ["index.html"]; writeFileSync(join(pulledDir, "manifest.json"), JSON.stringify(m));
-assert.match(await run("push", S, pulledDir, "--note", "test change"), /Pushed Souk Decisions v4/);
+assert.match(await run("push", S, pulledDir, "--note", "test change"), /Pushed Team Decisions v4/);
 assert.equal(state.pushed.expected_latest_version, 3);
 assert.deepEqual(Object.keys(state.pushed.files).sort(), ["index.html", "worker.mjs"]);
 await failsWith(4, /newer version than v3/, "push", S, pulledDir, "--base", "3", "--note", "test change");
 const fresh = mkdtempSync(join(tmpdir(), "rokku-fresh-"));
 for (const name of ["manifest.json", "worker.mjs", "index.html"]) writeFileSync(join(fresh, name), readFileSync(join(pulledDir, name)));
-await fails(/was not pulled from Souk Decisions/, "push", S, fresh, "--note", "test change");
+await fails(/was not pulled from Team Decisions/, "push", S, fresh, "--note", "test change");
 assert.match(await run("check", S, fresh), /passes the publication checks/, "check needs no base and no note");
-assert.match(await run("push", S, fresh, "--base", "4", "--note", "test change"), /Pushed Souk Decisions v5/);
+assert.match(await run("push", S, fresh, "--base", "4", "--note", "test change"), /Pushed Team Decisions v5/);
 // --force replaces the creation's files, drops the ones this version no longer has, keeps the user's own
-assert.match(await run("pull", "souk", pulledDir, "--version", "3", "--force"), /v3/);
+assert.match(await run("pull", "team", pulledDir, "--version", "3", "--force"), /v3/);
 assert.equal(existsSync(join(pulledDir, "old.css")), true);
-assert.match(await run("pull", "souk", pulledDir, "--force"), /v5/);
+assert.match(await run("pull", "team", pulledDir, "--force"), /v5/);
 assert.equal(existsSync(join(pulledDir, "old.css")), false, "stale files from an earlier pull are removed");
 assert.equal(readFileSync(join(pulledDir, "notes.txt"), "utf8"), "mine, not the creation's");
 state.corrupt = true;
-await fails(/does not match its sha256|bytes/, "pull", "souk", join(fresh, "corrupt"));
+await fails(/does not match its sha256|bytes/, "pull", "team", join(fresh, "corrupt"));
 state.corrupt = false;
 // a manifest path that leaves the directory, or a symlink inside it, is never read
 const escaping = mkdtempSync(join(tmpdir(), "rokku-escape-"));
@@ -335,8 +335,8 @@ symlinkSync("/etc/hosts", join(escaping, "linked.txt"));
 await fails(/symbolic link/, "check", S, escaping, "--note", "test change");
 
 // versions follows every page
-assert.deepEqual((await runJson("versions", "souk", "--raw")).map(v => v.artifact_version), [5, 4, 3, 2, 1]);
-assert.match((await run("versions", "souk")).split("\n")[1], /^v5 .*on Home/);
+assert.deepEqual((await runJson("versions", "team", "--raw")).map(v => v.artifact_version), [5, 4, 3, 2, 1]);
+assert.match((await run("versions", "team")).split("\n")[1], /^v5 .*on Home/);
 
 // rokku api reads unless told to write
 await fails(/only reads unless you pass --write/, "api", "POST", "/v1/agents/{agent}/widgets");
@@ -347,10 +347,10 @@ for (const path of ["/v1/agents/{agent}/conversations/c/interactions/i/responses
   await failsWith(64, /your own decision/, "api", "POST", path, "--write", "--json", "{}");
 
 // raw call, say, logout
-const raw = await runJson("call", "souk", "GET", "/api/records/directives");
+const raw = await runJson("call", "team", "GET", "/api/records/directives");
 assert.equal(raw.status, 200);
 assert.deepEqual(raw.body.records, []);
-await fails(/is exactly/, "call", "souk", "POST", "/api/records/directives", "--json", "{}");
+await fails(/is exactly/, "call", "team", "POST", "/api/records/directives", "--json", "{}");
 // a creation's own POST is sent once even when the creation is busy; a read is retried
 state.busyHits = 0;
 assert.equal((await exec(["call", S, "POST", "/api/busy", "--json", "{}"]).catch(error => error)).code, 1);

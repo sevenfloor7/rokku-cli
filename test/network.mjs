@@ -1,6 +1,6 @@
 // The CLI goes through HTTP(S)_PROXY when one is set, and says plainly when Rokku can't be reached.
 import assert from "node:assert/strict";
-import {createServer, request as forward} from "node:http";
+import http, {createServer, request as forward} from "node:http";
 import {AGENT, fakeApi} from "./fake-api.mjs";
 
 const api = await fakeApi({"GET /v1/user/info": () => ({email: "x@example.com", agents: [{agent_id: AGENT}]})});
@@ -15,9 +15,12 @@ const proxy = createServer((incoming, outgoing) => {
 });
 const port = await new Promise(done => proxy.listen(0, "127.0.0.1", () => done(proxy.address().port)));
 
-const viaProxy = await api.run(["whoami"], "", {HTTP_PROXY: `http://127.0.0.1:${port}`});
-assert.equal(viaProxy.code, 0, viaProxy.stderr);
-assert.ok(carried.some(url => url.endsWith("/v1/user/info")), "requests go through HTTP_PROXY");
+// Node 22.21+ and 24+ can route fetch through HTTP(S)_PROXY; older Node can't, and the CLI says so when Rokku is unreachable.
+if (http.setGlobalProxyFromEnv) {
+  const viaProxy = await api.run(["whoami"], "", {HTTP_PROXY: `http://127.0.0.1:${port}`});
+  assert.equal(viaProxy.code, 0, viaProxy.stderr);
+  assert.ok(carried.some(url => url.endsWith("/v1/user/info")), "requests go through HTTP_PROXY");
+}
 
 // A port nothing listens on.
 const closed = createServer();
