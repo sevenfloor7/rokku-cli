@@ -1,90 +1,170 @@
-# rokku CLI
+# Rokku CLI
 
-Lets Claude Code / Codex on your laptop read and write your Rokku creations and talk to your Rokku agent, so the same account works from the laptop and the phone. Zero dependencies, Node 20.11+.
+[中文说明](README.zh-CN.md)
 
-## Install and log in
+Use your [Rokku](https://www.rokku.ai) account from the terminal, Claude Code, and Codex.
 
-From GitHub (not on npm yet):
+Rokku is a personal AI assistant on your iPhone. With this CLI, a coding agent on your laptop can build and update your Rokku creations (the small apps on your Rokku Home screen), manage Home, themes, automations, connectors and model keys, and hand anything else to your Rokku agent. Everything it does lands in the same account, so you see the result on your phone right away.
+
+- Zero dependencies. Needs Node.js 20.11 or newer.
+- Works as a plain CLI, as a Claude Code skill, as Codex instructions, or as an MCP server.
+- MIT licensed.
+
+## What you can do
+
+| Area | Examples |
+| --- | --- |
+| Creations | Create, pull, check and push new versions; see version history; restore an old version; trash and restore; public links; usage |
+| Creation data | Read and write a creation's stored data; wait for or watch changes |
+| Home | Add, remove, reorder and resize cards on your Home screen |
+| Themes | Show, save, apply, switch and undo themes |
+| Automations and tasks | Create, edit, pause and delete scheduled automations; list, read, message and cancel tasks |
+| Connectors and keys | Connect services (OAuth finishes in your browser), remove connections, add your own model keys, switch the model Rokku runs on |
+| Memory and export | Read what Rokku remembers (read-only); export your account |
+| Your Rokku agent | `rokku ask` sends a message and streams the reply. Use it for anything without a direct command, including things that run on your phone (calendar, reminders, photos and so on); when your phone needs to confirm, the card shows up there |
+
+When you change a creation from your laptop, your Rokku agent can see it: each version keeps a short note about what changed, and Home changes are recorded too. On your phone you can ask "what did I just change on my computer?"
+
+## Install
 
 ```bash
-git clone https://github.com/sevenfloor7/rokku-cli && npm install -g ./rokku-cli   # update: git -C rokku-cli pull && npm install -g ./rokku-cli
-rokku login                   # your Rokku email + code; this laptop becomes its own device
-ln -s "$PWD/rokku-cli/skills/rokku" ~/.claude/skills/rokku   # the Claude Code skill
+git clone https://github.com/sevenfloor7/rokku-cli
+npm install -g ./rokku-cli
 ```
 
-For Codex, append `agents/AGENTS.md` to your `~/.codex/AGENTS.md` (or a project's `AGENTS.md`).
+To update later:
 
-Either agent can also use the CLI as MCP tools: `claude mcp add rokku -- rokku mcp`, or `codex mcp add rokku -- rokku mcp`. For Codex, two settings matter: if the server's `env` sets `PATH`, it must include the folder `node` is in (otherwise the tools silently don't appear), and `codex exec` needs `default_tools_approval_mode = "approve"` on the server, since its default approval of `never` blocks every tool call. Under MCP, commands that need a secret value refuse and ask the user to run them in a terminal. A tool call can pass `yes` to skip the confirmation of a delete or removal, since the agent asks the user before calling the tool; in a terminal those still ask first.
+```bash
+git -C rokku-cli pull && npm install -g ./rokku-cli
+```
 
-The default API is production (`https://api.rokku.ai`). For the test environment: `rokku login --api https://test-api.rokku.ai`.
+To uninstall: `npm uninstall -g rokku-cli`.
 
-## Layout
+## Log in
 
-- `bin/rokku.mjs`, `skills/rokku/`: the CLI and its skill.
+```bash
+rokku login
+```
+
+Enter your Rokku email and the code you receive. The laptop signs in as its own device, so your phone stays signed in. It appears in the Rokku app's device list as "Rokku CLI on \<your computer>", and you can revoke it there or with `rokku logout`.
+
+Check it worked:
+
+```bash
+rokku whoami
+```
+
+## Connect your coding agent
+
+### Claude Code
+
+Install the skill (run this from the folder where you cloned the repo):
+
+```bash
+mkdir -p ~/.claude/skills && ln -s "$PWD/rokku-cli/skills/rokku" ~/.claude/skills/rokku
+```
+
+Or use the CLI as MCP tools:
+
+```bash
+claude mcp add rokku -- rokku mcp
+```
+
+### Codex
+
+Append `agents/AGENTS.md` to `~/.codex/AGENTS.md` (or to a project's `AGENTS.md`), or add the MCP server:
+
+```bash
+codex mcp add rokku -- rokku mcp
+```
+
+Two Codex settings matter:
+
+- If the server's `env` sets `PATH`, it must include the folder `node` is in. Otherwise the tools silently don't appear.
+- `codex exec` needs `default_tools_approval_mode = "approve"` on the server. The default, `never`, blocks every tool call.
+
+### Other MCP clients
+
+Run `rokku mcp` as a stdio server.
+
+## Quick examples
+
+```bash
+rokku creations                                   # list your creations
+rokku pull "Reading List" ./reading-list          # download its source
+#   ...edit the files, or let your coding agent edit them...
+rokku push "Reading List" ./reading-list --note "Group books by month"
+rokku home add "Reading List" --size m            # put it on Home
+rokku ask "Make my theme warmer for the evening"  # hand something to your Rokku agent
+```
+
+Run `rokku help` for every command and flag.
 
 ## Commands
 
 ```
-rokku login | logout | whoami | creations [--raw]
-rokku ask "text" | --file prompt.md [--no-wait] [--timeout 600]   message your Rokku agent as you; streams its reply
-rokku chat [--last 6] [--full]        read your Rokku agent's latest replies
-rokku data list   <creation> <collection> [--where f=v ...] [--raw]
-rokku data get    <creation> <collection> <id>
-rokku data put    <creation> <collection> [<id>] (--json '{...}' | --file f | --file - <<'EOF') [--stamp field] [--if-absent]
-rokku data patch  <creation> <collection> <id> (--json | --file | stdin) [--stamp field]
-rokku data delete <creation> <collection> <id>
-rokku data import <creation> <collection> --file rows.jsonl [--if-absent]   bulk, one process
-rokku data wait   <creation> <collection> <id> --until f=v [--timeout 240]    exit 0 = matched, 2 = not yet
-rokku data watch  <creation> <collection> [--where f=v] [--include-existing] [--once] [--timeout S]
-rokku call <creation> <METHOD> </path> [--json '{...}']
-rokku pull <creation> <dir> [--version N] [--force]   into an empty dir; --force refreshes a pulled dir in place
-rokku check <creation> <dir> --note "…"  /  rokku push <creation> <dir> --note "…" [--base N]   push builds on the pulled version
-rokku secret list|set|delete
-rokku versions <creation> [--raw]
-rokku restore-version <creation> <version>  /  rokku trash <creation>  /  rokku untrash <creation>  /  rokku creations --trashed
-rokku link <creation> [--on [--version N] | --off]   public link
+rokku login | logout | whoami | mcp
+rokku ask "text" | --file f [--no-wait] [--timeout S]    message your Rokku agent as you; streams its reply
+rokku answer <card id>                                   answer a card from your Rokku agent, in a terminal
+rokku chat [--last 6] [--full]                           read your Rokku agent's latest replies
+
+rokku creations [--trashed] [--raw]
+rokku create <dir> --note "…" [--title T]                publish local source as a new creation
+rokku pull <creation> <dir> [--version N] [--force]
+rokku check <creation> <dir> | --new <dir>               run the publication checks, publish nothing
+rokku push <creation> <dir> --note "…" [--base N]        publish the next version
+rokku versions <creation>  |  restore-version <creation> <version>
+rokku trash <creation>  |  untrash <creation>
+rokku link <creation> [--on | --off]                     public link
 rokku usage <creation> [--month YYYY-MM]
-rokku home [list | add <creation> [--size s|m|l] | size <creation> s|m|l | move <creation> --top|--bottom|--slot N | version <creation> N | remove <creation>]
-rokku theme [show | list | save <name> | apply <theme> | undo | reset | delete <theme>]
-rokku automation [list | show <a> | create (--file def.json | stdin) | edit <a> --file patch.json | on <a> | off <a> | delete <a> | fires <a>]
-rokku task [list [--state running,waiting] | show <id> [--content] | message <id> "text" | cancel <id> | retry <id>]
-rokku connector [list | catalog | connect <connector> | connect --mcp-url URL --unreviewed [--bearer] | remove <c> | allow <c> view=… manage=…]
-rokku model [show | use <model> (--key <k> | --provider P | --base-url URL) | default]   the model Rokku runs on (BYOK or Rokku's default)
-rokku key [list | providers | add (--provider P | --base-url URL) [--label L] | label <k> <label> | rotate <k> | remove <k> | models <k>]
-rokku memory [--grep text] | files [dir] | read <path>     read-only
-rokku export [--out file]                                  everything in your account
-rokku api [GET] </v1/...>                               raw Rokku API read; other methods need --write
+rokku secret list | set NAME --host HOST | delete NAME   keys a creation's backend may use
+
+rokku data list|get|put|patch|delete|import|wait|watch <creation> <collection> …
+rokku call <creation> <METHOD> <path> [--json '{…}']     raw request to the creation's backend
+
+rokku home [list | add | size | move | version | remove]
+rokku theme [show | list | save | apply | undo | reset | delete]
+rokku automation [list | show | create | edit | on | off | delete | fires]
+rokku task [list | show | message | cancel | retry]
+rokku connector [list | catalog | connect | remove | allow]
+rokku key [list | providers | add | label | rotate | remove | models]
+rokku model [show | use | default]                       the model Rokku runs on
+rokku memory [--grep text] | files [dir] | read <path>   read-only
+rokku export [--out file]                                your chats and memory
+rokku api [GET] </v1/...>                                raw API read; other methods need --write
 ```
 
-Changes that cannot be undone (removing from Home, deleting a theme, an automation, a connection or a Key) ask first; `--yes` answers for scripts. Keys, tokens and connector credentials are read only from a hidden prompt or stdin, never from arguments.
+`<creation>` is an id or a title. Reads accept part of a title; writes need the exact title, so a renamed creation never gets changes meant for another.
 
-Exit codes: 0 ok, 1 error, 2 not yet (`data wait` / `watch --once`), 3 not logged in, 4 conflict (someone changed it first), 5 Rokku unreachable or busy (retry later), 6 publication checks failed, 64 bad arguments.
+## What stays with you
 
-`<creation>` is an id or a title. Reads accept part of a title; writes need the exact title, so a renamed creation never receives data meant for another. `data` works on any Rokku app creation with DATA collections: the platform gives every one of them the same `/api/records/<collection>` routes.
+Some steps need you, not your coding agent, by design:
 
-## How it works
+- **Logging in.** The agent asks you to run `rokku login`.
+- **Answering cards.** When Rokku asks for a choice, a confirmation or a permission, you answer on your phone or with `rokku answer <id>` in your own terminal. The agent only tells you what is being asked.
+- **Secrets.** Keys, tokens and connector credentials are read only from a hidden prompt or stdin, never from command arguments. Under MCP, commands that need one refuse and ask you to run them yourself.
+- **Changes that can't be undone.** Deleting a theme, an automation, a connection or a key asks first. `--yes` answers for scripts; an MCP tool call can pass `yes` because the agent asks you before calling the tool.
 
-- **Login** uses Rokku's normal email-code login under its own device id, so it doesn't sign your phone out. It shows up in the app's device list as "Rokku CLI on <host>", where you can revoke it; `rokku logout` revokes it too. On macOS the tokens live in the login keychain (item "rokku-cli"); elsewhere, or with `ROKKU_TOKEN_STORE=file`, in `~/.config/rokku/config.json` (mode 0600). Other settings are always in that file.
-- **Creation access** uses the accepted ADR-0067 path: the first request to a creation's address carries your account token, and the Gateway swaps it for a per-creation session cookie and CSRF token. Every later read and write goes through the creation's own backend, with the same owner checks, budget and revision checks the app gets.
-- **Writes** use the platform's revision check: `put` creates or replaces; `patch` merges fields and retries if your phone edited the record at the same moment.
+The CLI uses the same full-account session as the Rokku app, so keep it on your own computer. A login with narrower permissions is planned.
 
-## Limits of this login
+On macOS, login tokens live in the login keychain (item "rokku-cli"). Elsewhere, or with `ROKKU_TOKEN_STORE=file`, they live in `~/.config/rokku/config.json` with file mode 0600.
 
-The CLI holds the same full-account session as the App. Keep it on your own laptop, and revoke it from the App's device list or with `rokku logout`. A scoped token comes before a wide public release.
+## Costs
 
-## Test
+The CLI itself and your coding agent's own usage don't count toward Rokku. Work that Rokku does for you counts toward your Rokku usage, the same as in the app: replies to `rokku ask` and the tasks it starts, plus deploying and running your creations.
 
-```bash
-npm test   # fake Rokku API + fake Gateway running the platform recordsWorker (copy in test/fixtures):
-           # login, refresh, session renewal, CAS retry, parallel writers, wait/watch, pull/push/check
-```
+## Troubleshooting
 
-## Routes
+- **`rokku: command not found`.** npm's global bin folder isn't on your `PATH`. Run `npm prefix -g` and add its `bin` folder to `PATH`.
+- **Behind a proxy.** The CLI follows `HTTPS_PROXY` / `HTTP_PROXY` on Node 22.21+ and 24+. On older Node it can't, and says so when Rokku is unreachable.
+- **Push says the creation changed.** Someone (or your Rokku agent) published a newer version. Run `rokku pull` again and redo your change on top.
 
-The CLI sends requests only to routes listed in `lib/routes.generated.mjs`, generated from rokku-backend's `openapi/public.json`. `npm test` fails if the code names a route that is not there. After the backend's API changes:
+Exit codes for scripts: 0 ok, 1 error, 2 not yet (`data wait` / `data watch --once`), 3 not logged in, 4 conflict (someone changed it first), 5 Rokku unreachable or busy (retry later), 6 publication checks failed, 64 bad arguments.
 
-```bash
-git -C ../rokku-backend fetch origin test && git -C ../rokku-backend show origin/test:openapi/public.json > /tmp/public.json
-npm run gen:routes -- /tmp/public.json && npm test
-```
+## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)
