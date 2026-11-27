@@ -21,6 +21,9 @@ const api = await fakeApi({
     usage: {period_start: "2026-11-27T17:14:02Z", charged_micro_credits: {model: 28_980, search: 37_500, sandbox: 0}, total_charged_micro_credits: 66_480}}}),
   "GET /v1/agents/{agent_id}/memory/stats": () => ({about_you: 12, relationship: 3, tree_revision: 40, updated_at: "2026-11-27T10:00:00Z"}),
   "GET /v1/agents/{agent_id}/settings": () => agent,
+  // a version conflict comes as HTTP 200 with code 3001 and reason version_conflict
+  "PATCH /v1/agents/{agent_id}/settings": () => ({status: 200, body: {code: 3001, data: null,
+    error: {message: "resource version conflict", details: {current_version: 9, reason: "version_conflict"}}}}),
   "GET /v1/user/settings": () => user,
   "PATCH /v1/user/settings": r => (user = {...user, ...r.body, settings_version: user.settings_version + 1}),
   "GET /v1/provider-connections/{connection_id}/account-usage": () => ({checked_at: "2026-11-28T01:00:00Z",
@@ -83,6 +86,10 @@ agent = {...agent, model_config: {kind: "byok", model: "gpt-6"}, provider_connec
 assert.match((await run(["model", "mode", "balanced"])).stdout, /applies after rokku model default/);
 const keyUsage = await run(["model", "usage"]);
 assert.match(keyUsage.stdout, /Balance: 12\.50 USD/); assert.match(keyUsage.stdout, /Today: not reported/); assert.match(keyUsage.stdout, /This month: 3\.20 USD/);
+
+// a business version conflict exits 4, like an HTTP 409
+const conflict = await run(["model", "default"]);
+assert.equal(conflict.code, 4, conflict.stderr);
 
 // connector events: active grants only, by creation, and stopping one asks first
 const events = await run(["connector", "events"]);

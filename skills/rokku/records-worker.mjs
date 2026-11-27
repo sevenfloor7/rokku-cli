@@ -1,5 +1,5 @@
 // Platform module: copy it unchanged into a creation that stores data. Copied from rokku-backend
-// backend/rokku/runtimes/deepagents/artifact_runtime_records_worker.mjs (test d87b952c3); refresh it
+// backend/rokku/runtimes/deepagents/artifact_runtime_records_worker.mjs (test f03028502); refresh it
 // when the platform block changes. The CLI's tests run against this copy.
 /** Platform records block (version 1): DATA create/edit/delete, cursor pages and
  * receipts for declared collections. Pair with RokkuDataClient.bindRecords.
@@ -50,7 +50,7 @@ export function recordsWorker({collections, routes} = {}) {
             await data.putResult(collection, input);
           return result.kind === "committed" ? Response.json(result.receipt) :
             Response.json({kind:result.kind}, {status:result.kind === "reauthorize" ? 401 :
-              result.kind === "budget_denied" ? 429 : 409});
+              result.kind === "budget_denied" ? 429 : result.kind === "rejected" ? 422 : 409});
         }
         return new Response(null, {status:405});
       }

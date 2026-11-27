@@ -118,7 +118,7 @@ rokku versions <creation>  |  restore-version <creation> <version>
 rokku trash <creation>  |  untrash <creation>
 rokku link <creation> [--on | --off]                     public link
 rokku usage <creation> [--month YYYY-MM]
-rokku secret list | set NAME --host HOST | delete NAME   keys a creation's backend may use
+rokku secret list | set NAME --host HOST --creation C | delete NAME   keys a creation's backend may use
 
 rokku data list|get|put|patch|delete|import|wait|watch <creation> <collection> …
 rokku call <creation> <METHOD> <path> [--json '{…}']     raw request to the creation's backend

@@ -58,7 +58,7 @@ const HELP = `rokku — your Rokku account from Claude Code / Codex
   rokku push     <creation> [<dir>] --note "…" [--base N]   publish local source as the next version (same checks as the agent);
                                                      builds on the version the dir was pulled at, or --base N
   rokku versions <creation> [--raw]                  list every saved version
-  rokku secret list | set NAME --host HOST [--header 'X-API-Key: {}'] [--creation A,B] [--sandbox] | delete NAME
+  rokku secret list | set NAME --host HOST (--creation A,B and/or --sandbox) [--header 'X-API-Key: {}'] | delete NAME
   rokku secret set NAME --from "App Key" --creation A,B   link a model Key stored in Rokku (rokku key list lists them)
   rokku api [GET] </v1/...>                          raw Rokku API read; other methods need --write [--json '{...}' | --file f]
 
