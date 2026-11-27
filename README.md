@@ -19,8 +19,8 @@ Rokku is a personal AI assistant on your iPhone. With this CLI, a coding agent o
 | Home | Add, remove, reorder and resize cards on your Home screen |
 | Themes | Show, save, apply, switch and undo themes |
 | Automations and tasks | Create, edit, pause and delete scheduled automations; list, read, message and cancel tasks |
-| Connectors and keys | Connect services (OAuth finishes in your browser), remove connections, add your own model keys, switch the model Rokku runs on |
-| Memory and export | Read what Rokku remembers (read-only); export your account |
+| Connectors and keys | Connect services (OAuth finishes in your browser), remove connections, see and stop the connector events a creation gets, add your own model keys, switch the model Rokku runs on or its mode, see your key's balance |
+| Chat, memory and account | Read, search and delete chat messages; read what Rokku remembers (read-only); see your plan and credits; export your account |
 | Your Rokku agent | `rokku ask` sends a message and streams the reply. Use it for anything without a direct command, including things that run on your phone (calendar, reminders, photos and so on); when your phone needs to confirm, the card shows up there |
 
 When you change a creation from your laptop, your Rokku agent can see it: each version keeps a short note about what changed, and Home changes are recorded too. On your phone you can ask "what did I just change on my computer?"
@@ -106,7 +106,8 @@ Run `rokku help` for every command and flag.
 rokku login | logout | whoami | mcp
 rokku ask "text" | --file f [--no-wait] [--timeout S]    message your Rokku agent as you; streams its reply
 rokku answer <card id>                                   answer a card from your Rokku agent, in a terminal
-rokku chat [--last 6] [--full]                           read your Rokku agent's latest replies
+rokku chat [--last 6] [--full] [--ids]                   read your Rokku agent's latest replies
+rokku chat search <text> | delete <message id>...        search your chat; delete messages (you run it yourself)
 
 rokku creations [--trashed] [--raw]
 rokku create <dir> --note "…" [--title T]                publish local source as a new creation
@@ -117,7 +118,7 @@ rokku versions <creation>  |  restore-version <creation> <version>
 rokku trash <creation>  |  untrash <creation>
 rokku link <creation> [--on | --off]                     public link
 rokku usage <creation> [--month YYYY-MM]
-rokku secret list | set NAME --host HOST | delete NAME   keys a creation's backend may use
+rokku secret list | set NAME --host HOST --creation C | delete NAME   keys a creation's backend may use
 
 rokku data list|get|put|patch|delete|import|wait|watch <creation> <collection> …
 rokku call <creation> <METHOD> <path> [--json '{…}']     raw request to the creation's backend
@@ -126,11 +127,12 @@ rokku home [list | add | size | move | version | remove]
 rokku theme [show | list | save | apply | undo | reset | delete]
 rokku automation [list | show | create | edit | on | off | delete | fires]
 rokku task [list | show | message | cancel | retry]
-rokku connector [list | catalog | connect | remove | allow]
+rokku connector [list | catalog | connect | remove | allow | events | stop-event]
 rokku key [list | providers | add | label | rotate | remove | models]
-rokku model [show | use | default]                       the model Rokku runs on
-rokku memory [--grep text] | files [dir] | read <path>   read-only
+rokku model [show | use | default | mode | usage]        the model Rokku runs on
+rokku memory [--grep text] | files [dir] | read <path> | stats   read-only
 rokku export [--out file]                                your chats and memory
+rokku billing                                            your plan and credits (read-only)
 rokku api [GET] </v1/...>                                raw API read; other methods need --write
 ```
 
@@ -143,7 +145,7 @@ Some steps need you, not your coding agent, by design:
 - **Logging in.** The agent asks you to run `rokku login`.
 - **Answering cards.** When Rokku asks for a choice, a confirmation or a permission, you answer on your phone or with `rokku answer <id>` in your own terminal. The agent only tells you what is being asked.
 - **Secrets.** Keys, tokens and connector credentials are read only from a hidden prompt or stdin, never from command arguments. Under MCP, commands that need one refuse and ask you to run them yourself.
-- **Changes that can't be undone.** Deleting a theme, an automation, a connection or a key asks first. `--yes` answers for scripts; an MCP tool call can pass `yes` because the agent asks you before calling the tool.
+- **Changes that can't be undone.** Deleting a theme, an automation, a connection or a key asks first. `--yes` answers for scripts; an MCP tool call can pass `yes` because the agent asks you before calling the tool. Deleting chat messages goes further: it runs only when you type yes yourself, never through a coding agent.
 
 The CLI uses the same full-account session as the Rokku app, so keep it on your own computer. A login with narrower permissions is planned.
 

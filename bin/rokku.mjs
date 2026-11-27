@@ -18,6 +18,8 @@ import {commands as connectorCommands} from "../lib/commands/connectors.mjs";
 import {commands as keyCommands} from "../lib/commands/keys.mjs";
 import {commands as modelCommands} from "../lib/commands/model.mjs";
 import {commands as memoryCommands} from "../lib/commands/memory.mjs";
+import {commands as chatCommands} from "../lib/commands/chat.mjs";
+import {commands as billingCommands} from "../lib/commands/billing.mjs";
 import {ask, commands as askCommands} from "../lib/commands/ask.mjs";
 import {commands as cardCommands, reportCapabilities} from "../lib/cards.mjs";
 
@@ -27,7 +29,7 @@ const USER_DECISIONS = /\/interactions\/[^/]+\/responses|\/third-party-connectio
 
 // Command groups in lib/commands: each entry is {usage, run(config, positional, flags)}.
 const COMMANDS = {...creationCommands, ...homeCommands, ...themeCommands, ...automationCommands, ...taskCommands,
-  ...connectorCommands, ...keyCommands, ...modelCommands, ...memoryCommands, ...askCommands, ...cardCommands};
+  ...connectorCommands, ...keyCommands, ...modelCommands, ...memoryCommands, ...chatCommands, ...billingCommands, ...askCommands, ...cardCommands};
 
 // ---------- commands ----------
 const HELP = `rokku — your Rokku account from Claude Code / Codex
@@ -38,7 +40,6 @@ const HELP = `rokku — your Rokku account from Claude Code / Codex
   rokku whoami                                  check the login is still valid
   rokku creations [--trashed] [--raw]           list your creations ("app" = deployed app)
   rokku say "text" | --file prompt.md           send a message to your Rokku agent, as you, without waiting
-  rokku chat [--last 6] [--full]                read the latest messages in your Rokku chat
 
   rokku data list   <creation> <collection> [--where f=v ...] [--raw]
   rokku data get    <creation> <collection> <id>
@@ -57,7 +58,7 @@ const HELP = `rokku — your Rokku account from Claude Code / Codex
   rokku push     <creation> [<dir>] --note "…" [--base N]   publish local source as the next version (same checks as the agent);
                                                      builds on the version the dir was pulled at, or --base N
   rokku versions <creation> [--raw]                  list every saved version
-  rokku secret list | set NAME --host HOST [--header 'X-API-Key: {}'] [--creation A,B] [--sandbox] | delete NAME
+  rokku secret list | set NAME --host HOST (--creation A,B and/or --sandbox) [--header 'X-API-Key: {}'] | delete NAME
   rokku secret set NAME --from "App Key" --creation A,B   link a model Key stored in Rokku (rokku key list lists them)
   rokku api [GET] </v1/...>                          raw Rokku API read; other methods need --write [--json '{...}' | --file f]
 
@@ -253,20 +254,6 @@ async function main() {
     if (!text.trim()) usage("Nothing to say");
     const accepted = await ask(config, text, {wait: false});
     return print(`Sent to your Rokku agent (message ${accepted.message_id}). Read the reply with: rokku chat, or use rokku ask to wait for it.`);
-  }
-  if (command === "chat") {
-    const last = seconds(flags, "last", 6, 1);
-    // Reading the newest messages first needs chat protocol 7 (entries wrap each message as {message}).
-    const page = await request(config, "GET /v1/agents/{agent_id}/conversations/{conversation_id}/messages", {
-      params: {conversation_id: config.conversation_id}, query: {before_message_seq: Number.MAX_SAFE_INTEGER, limit: Math.min(50, last)},
-      headers: {"X-Rokku-Chat-Protocol": "7"}});
-    const clip = body => flags.full || body.length <= 600 ? body : body.slice(0, 600) + " …(--full for all)";
-    const text = message => message.content.map(block => block.payload?.text ?? block.fallback_text ??
-      block.payload?.original?.title ?? `[${block.type}]`).join("\n");
-    return print(page.messages.map(entry => entry.message ?? entry).slice(-last).map(message =>
-      `── ${message.role === "user" ? "you" : "Rokku"} · ${when(message.created_at)}` +
-      `${message.processing_state ? ` · ${message.processing_state}` : ""}` +
-      `${message.processing_error ? ` (${message.processing_error.summary})` : ""}\n${clip(text(message))}`).join("\n\n") || "(no messages)");
   }
   if (command === "call") {
     const [ref, method, path] = positional;

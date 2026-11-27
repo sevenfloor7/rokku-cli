@@ -54,10 +54,11 @@ assert.equal(off.code, 1); assert.match(off.stderr, /Public links are not turned
 assert.equal(last("PUT /v1/agents/{agent_id}/artifacts/{artifact_id}/public-publication"), undefined, "nothing is sent while the feature is off");
 linksOff = false;
 assert.match((await run(["link", "Ping"])).stdout, /no public link/);
-assert.match((await run(["link", "Ping", "--on", "--version", "2"])).stdout, /Anyone with this link/);
-assert.deepEqual(last("PUT /v1/agents/{agent_id}/artifacts/{artifact_id}/public-publication").body, {expected_revision: 0, state: "active", artifact_version: 2});
+assert.equal((await run(["link", "Ping", "--on", "--version", "2"])).code, 64, "a link can't be pinned to a version");
+assert.match((await run(["link", "Ping", "--on"])).stdout, /Anyone with this link/);
+assert.deepEqual(last("PUT /v1/agents/{agent_id}/artifacts/{artifact_id}/public-publication").body, {expected_revision: 0, state: "active"});
 assert.match((await run(["link", "Ping", "--off"])).stdout, /link is off/);
-assert.deepEqual(last("PUT /v1/agents/{agent_id}/artifacts/{artifact_id}/public-publication").body, {expected_revision: 1, state: "revoked", artifact_version: null});
+assert.deepEqual(last("PUT /v1/agents/{agent_id}/artifacts/{artifact_id}/public-publication").body, {expected_revision: 1, state: "revoked"});
 assert.match((await run(["usage", "Ping", "--month", "2026-10"])).stdout, /requests\s+3/);
 assert.equal(last("GET /v1/agents/{agent_id}/artifacts/{artifact_id}/usage").query.month, "2026-10-01");
 
