@@ -183,7 +183,7 @@ assert.match((await exec(["login", "--email", "x@example.com"], "123456\n")).std
 assert.match(state.deviceLabel, /^Rokku CLI on /);
 assert.equal(state.clientKind, "cli", "logs in as a CLI session");
 assert.deepEqual(state.capabilities, {schema_version: 2, client_revision: 1, device_tool_methods: [],
-  interaction_protocols: ["choice.v1", "connector.approval.v1", "connector.unreviewed_oauth.v1", "home.artifact_place.v1"]});
+  interaction_protocols: ["choice.v1", "confirmation.generic.v1", "connector.approval.v1", "connector.unreviewed_oauth.v1", "home.artifact_place.v1"]});
 assert.match(await run("creations"), /Team Decisions .* app/);
 assert.equal((await runJson("creations", "--raw")).length, 2, "--raw is a boolean and does not eat arguments");
 assert.equal((await runJson("whoami")).email, "x@example.com");
