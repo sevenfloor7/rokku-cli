@@ -35,6 +35,7 @@ const api = await fakeApi({
   "POST /v1/design-token-themes": r => ({theme_id: randomUUID(), name: r.body.name}),
   "POST /v1/design-token-themes/{theme_id}/apply": () => tokens,
   "POST /v1/design-tokens/current/undo": () => ({...tokens, theme: {kind: "system"}}),
+  "POST /v1/design-tokens/current/reset": () => ({...tokens, theme: {kind: "saved", id: randomUUID(), version: null, is_modified: false}}),
   "DELETE /v1/design-token-themes/{theme_id}": () => null,
   "POST /v1/agents/{agent_id}/artifacts:check": () => ({errors: checkErrors, warnings: []}),
 });
@@ -123,6 +124,10 @@ await run(["theme", "apply", "bright"]);
 assert.equal(last("POST /v1/design-token-themes/{theme_id}/apply").params.theme_id, themes[1].theme_id);
 assert.deepEqual(last("POST /v1/design-token-themes/{theme_id}/apply").body, {expected_revision: 11, expected_system_version: 2, expected_theme_version: 3});
 assert.match((await run(["theme", "undo"])).stdout, /default theme/);
+// reset clears edits and keeps the theme; a saved theme deleted while in use is the current look, unsaved
+assert.match((await run(["theme", "reset"])).stdout, /^Cleared your edits; your Rokku is still on your current look \(not saved\)\.$/);
+const missing = await run(["theme", "apply", "nope"]);
+assert.equal(missing.code, 1); assert.match(missing.stderr, /Saved themes: "Calm", "Bright"/);
 assert.equal((await run(["theme", "delete", "Calm"])).code, 64);
 await run(["theme", "delete", "Calm", "--yes"]);
 assert.equal(last("DELETE /v1/design-token-themes/{theme_id}").params.theme_id, themes[0].theme_id);
