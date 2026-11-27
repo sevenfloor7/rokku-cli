@@ -107,7 +107,7 @@ rokku login | logout | whoami | mcp
 rokku ask "text" | --file f [--no-wait] [--timeout S]    message your Rokku agent as you; streams its reply
 rokku answer <card id>                                   answer a card from your Rokku agent, in a terminal
 rokku chat [--last 6] [--full] [--ids]                   read your Rokku agent's latest replies
-rokku chat search <text> | delete <message id>...        search your chat; delete messages (asks first)
+rokku chat search <text> | delete <message id>...        search your chat; delete messages (you run it yourself)
 
 rokku creations [--trashed] [--raw]
 rokku create <dir> --note "…" [--title T]                publish local source as a new creation
@@ -145,7 +145,7 @@ Some steps need you, not your coding agent, by design:
 - **Logging in.** The agent asks you to run `rokku login`.
 - **Answering cards.** When Rokku asks for a choice, a confirmation or a permission, you answer on your phone or with `rokku answer <id>` in your own terminal. The agent only tells you what is being asked.
 - **Secrets.** Keys, tokens and connector credentials are read only from a hidden prompt or stdin, never from command arguments. Under MCP, commands that need one refuse and ask you to run them yourself.
-- **Changes that can't be undone.** Deleting a theme, an automation, a connection or a key asks first. `--yes` answers for scripts; an MCP tool call can pass `yes` because the agent asks you before calling the tool.
+- **Changes that can't be undone.** Deleting a theme, an automation, a connection or a key asks first. `--yes` answers for scripts; an MCP tool call can pass `yes` because the agent asks you before calling the tool. Deleting chat messages goes further: it runs only when you type yes yourself, never through a coding agent.
 
 The CLI uses the same full-account session as the Rokku app, so keep it on your own computer. A login with narrower permissions is planned.
 
