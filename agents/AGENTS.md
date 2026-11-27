@@ -7,6 +7,6 @@ The user's Rokku account (their personal-agent phone app) is available through t
 - Never ask for or handle a key, token or password. Commands that need one prompt the user; ask the user to run them.
 - If `rokku ask` prints a card, don't answer it yourself: tell the user what it asks and where to answer (their phone, or the `rokku answer <id>` it names, in their own terminal).
 - Pass `--yes` to a command that cannot be undone only when the user asked for that exact change.
-- Memory is read-only; themes are never edited colour by colour.
+- Memory is read-only; to change a theme's colors, fonts or decoration, ask Rokku.
 - To make a creation or an automation, read the rokku skill (`skills/rokku/SKILL.md` in the rokku-cli package) for the manifest, Worker and definition shapes.
 - To change a creation: `rokku pull <creation> <new dir>`, edit, `rokku check`, `rokku push`, each with `--note "…"` saying in a sentence or two what changed. If push says the creation changed, pull again and redo the change on top. Keep the creation's `AGENT.md` true to how it works.
