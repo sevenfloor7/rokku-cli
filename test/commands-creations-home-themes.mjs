@@ -130,7 +130,7 @@ assert.match((await run(["theme", "undo"])).stdout, /default theme/);
 // reset clears edits and keeps the theme; a saved theme deleted while in use is the current look, unsaved
 assert.match((await run(["theme", "reset"])).stdout, /^Cleared your edits; your Rokku is still on your current look \(not saved\)\.$/);
 // not a saved theme: the built-in default dot, at its newest preset (no version sent)
-assert.match((await run(["theme", "apply", "Dot"])).stdout, /^Switched to the default theme dot\./);
+assert.match((await run(["theme", "apply", "Dot"])).stdout, /^Switched to the default theme, dot\./);
 const builtin = last("POST /v1/design-tokens/current/builtin-themes/{builtin_id}/apply");
 assert.equal(builtin.params.builtin_id, "dot"); assert.deepEqual(builtin.body, {expected_revision: 11, expected_system_version: 2, expected_theme_version: 3});
 const missing = await run(["theme", "apply", "nope"]);
