@@ -22,7 +22,7 @@ Run `rokku whoami`. If it fails, ask the user to run `rokku login` themselves.
 - Changes that cannot be undone ask first. Pass `--yes` only when the user has asked for that exact change.
 - Cards: when `rokku ask` prints a card from the Rokku agent, don't answer it for the user. Tell them what it asks and where to answer: on their phone, or with the `rokku answer <id>` it names in their own terminal.
 - Memory is read-only. To have Rokku remember or forget something, use `rokku ask`.
-- Themes are applied, saved, switched or undone, never edited colour by colour.
+- Themes are applied, saved, switched or undone here; to change colors, fonts or decoration, ask Rokku (rokku ask).
 - Pass JSON on stdin with a quoted heredoc (`--file - <<'EOF'`), not inside a quoted shell string.
 - Exit codes: 2 not yet, 3 not logged in, 4 someone changed it first (read again, then redo), 5 Rokku unreachable or busy (retry later), 6 publication checks failed, 64 bad arguments.
 
