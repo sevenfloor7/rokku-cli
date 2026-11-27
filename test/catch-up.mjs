@@ -49,14 +49,14 @@ await run(["chat", "search", "blueberry", "--before", "9"]);
 assert.equal(last("GET /v1/agents/{agent_id}/conversations/{conversation_id}/search").query.before_message_seq, "9");
 assert.match((await run(["chat", "search", "none"])).stdout, /nothing matches/);
 assert.equal((await run(["chat", "search"])).code, 64);
-const unconfirmed = await run(["chat", "delete", M1]);
-assert.equal(unconfirmed.code, 64); assert.match(unconfirmed.stderr, /--yes/);
-assert.equal(count("POST /v1/agents/{agent_id}/conversations/{conversation_id}/messages:delete"), 0, "nothing deleted without --yes");
-const deleted = await run(["chat", "delete", M1, M2, "--yes"]);
-assert.equal(deleted.code, 0, deleted.stderr); assert.match(deleted.stdout, /Deleted 2 messages/);
-const sent = last("POST /v1/agents/{agent_id}/conversations/{conversation_id}/messages:delete");
-assert.deepEqual(sent.body, {message_ids: [M1, M2]}); assert.equal(sent.params.conversation_id, CONVERSATION);
-assert.equal(sent.headers["x-rokku-chat-protocol"], "7");
+// deleting messages is the user's own decision: refused without a person at a terminal, --yes or not
+for (const args of [["chat", "delete", M1], ["chat", "delete", M1, M2, "--yes"]]) {
+  const refused = await run(args);
+  assert.equal(refused.code, 64); assert.match(refused.stderr, /your own decision/);
+}
+const viaMcp = await run(["chat", "delete", M1, "--yes"], "", {ROKKU_MCP: "1"});
+assert.equal(viaMcp.code, 64); assert.match(viaMcp.stderr, /your own decision/);
+assert.equal(count("POST /v1/agents/{agent_id}/conversations/{conversation_id}/messages:delete"), 0, "nothing deleted");
 assert.equal((await run(["chat", "nope"])).code, 64);
 
 // billing: credits in whole units, only the kinds that were charged
@@ -70,11 +70,14 @@ assert.ok(!billing.stdout.includes("sandbox"));
 assert.match((await run(["memory", "stats"])).stdout, /12 about you, 3 preferences and opinions/);
 
 // model mode and show
-assert.match((await run(["model"])).stdout, /own models, in light mode/);
-assert.equal((await run(["model", "mode"])).stdout, "light");
+assert.match((await run(["model"])).stdout, /own models, in Fast mode/);
+assert.equal((await run(["model", "mode"])).stdout, "Fast");
 assert.equal((await run(["model", "mode", "turbo"])).code, 64);
-assert.match((await run(["model", "mode", "deep"])).stdout, /now run in deep mode\.$/);
+assert.match((await run(["model", "mode", "turbo"])).stderr, /one of fast, balanced, advanced/);
+assert.match((await run(["model", "mode", "Advanced"])).stdout, /now run in Advanced mode\.$/);
 assert.deepEqual(last("PATCH /v1/user/settings").body, {model_mode: "deep"});
+assert.match((await run(["model", "mode", "light"])).stdout, /Fast mode/, "the API names are accepted too");
+assert.deepEqual(last("PATCH /v1/user/settings").body, {model_mode: "light"});
 assert.match((await run(["model", "usage"])).stdout, /rokku billing/);
 agent = {...agent, model_config: {kind: "byok", model: "gpt-6"}, provider_connection_id: "c1", byok_enabled: true};
 assert.match((await run(["model", "mode", "balanced"])).stdout, /applies after rokku model default/);
@@ -92,4 +95,4 @@ await run(["connector", "stop-event", GRANT, "--yes"]);
 assert.equal(last("DELETE /v1/agents/{agent_id}/artifact-event-grants/{grant_id}").params.grant_id, GRANT);
 
 api.close();
-console.log("ok — chat search/delete, billing, memory stats, model mode/usage and connector events");
+console.log("ok — chat search, delete only by a person, billing, memory stats, model mode/usage and connector events");

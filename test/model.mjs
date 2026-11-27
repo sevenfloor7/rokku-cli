@@ -20,7 +20,7 @@ const api = await fakeApi({
 });
 const {run, last, requests} = api;
 
-assert.match((await run(["model"])).stdout, /own models, in light mode/);
+assert.match((await run(["model"])).stdout, /own models, in Fast mode/);
 const used = await run(["model", "use", "claude-sonnet-5", "--key", "work"]);
 assert.equal(used.code, 0, used.stderr); assert.match(used.stdout, /now runs on claude-sonnet-5/);
 assert.equal(last("POST /v1/provider-connections").body.credential_id, KEY.credential_id);
