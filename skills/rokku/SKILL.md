@@ -13,7 +13,7 @@ Run `rokku whoami`. If it fails, ask the user to run `rokku login` themselves.
 
 ## Two ways to get things done
 
-- **Direct commands** for what has a command: creations (`create`, `pull`, `check`, `push`, `versions`, `restore-version`, `trash`, `untrash`, `link`, `usage`), `data`, `call`, `home`, `theme`, `automation`, `task`, `connector`, `key`, `memory`, `export`, `chat`.
+- **Direct commands** for what has a command: creations (`create`, `pull`, `check`, `push`, `versions`, `restore-version`, `trash`, `untrash`, `link`, `usage`), `data`, `call`, `home`, `theme`, `automation`, `task`, `connector`, `key`, `model`, `memory`, `export`, `chat`, `billing`.
 - **`rokku ask "…"`** for anything Rokku can do that has no command here, including what runs on the user's phone. It sends the message as the user and prints the agent's reply. Some actions need the user to confirm on their phone; `rokku ask` waits for that. Say in the message that it comes from a coding agent on the user's laptop, and send only what the user asked to hand over.
 
 ## Rules

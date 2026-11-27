@@ -23,7 +23,7 @@
     "url": "git+https://github.com/sevenfloor7/rokku-cli.git"
   },
   "scripts": {
-    "test": "node test/routes.mjs && node test/config.mjs && node test/e2e.mjs && node test/secret-from.mjs && node test/commands-creations-home-themes.mjs && node test/commands-automations-tasks.mjs && node test/commands-connectors-keys-memory.mjs && node test/ask.mjs && node test/mcp.mjs && node test/model.mjs && node test/network.mjs",
+    "test": "node test/routes.mjs && node test/config.mjs && node test/e2e.mjs && node test/secret-from.mjs && node test/commands-creations-home-themes.mjs && node test/commands-automations-tasks.mjs && node test/commands-connectors-keys-memory.mjs && node test/ask.mjs && node test/mcp.mjs && node test/model.mjs && node test/catch-up.mjs && node test/network.mjs",
     "gen:routes": "node scripts/gen-routes.mjs",
     "pack:check": "npm pack --dry-run"
   }

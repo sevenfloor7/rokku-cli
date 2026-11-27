@@ -9,6 +9,7 @@ const conns = [];
 let verifyResult = "ready";
 const api = await fakeApi({
   "GET /v1/agents/{agent_id}/settings": () => agent,
+  "GET /v1/user/settings": () => ({settings_version: 1, model_mode: "light"}),
   "PATCH /v1/agents/{agent_id}/settings": r => (agent = {...agent, agent_version: agent.agent_version + 1, model_config: r.body.model_config, provider_connection_id: r.body.provider_connection_id}),
   "GET /v1/provider-credentials": () => ({items: [KEY], pagination: {total_pages: 1}}),
   "POST /v1/provider-credentials": r => ({...KEY, credential_id: "k-new", endpoint: r.body.endpoint}),
@@ -19,7 +20,7 @@ const api = await fakeApi({
 });
 const {run, last, requests} = api;
 
-assert.match((await run(["model"])).stdout, /own default model/);
+assert.match((await run(["model"])).stdout, /own models, in light mode/);
 const used = await run(["model", "use", "claude-sonnet-5", "--key", "work"]);
 assert.equal(used.code, 0, used.stderr); assert.match(used.stdout, /now runs on claude-sonnet-5/);
 assert.equal(last("POST /v1/provider-connections").body.credential_id, KEY.credential_id);
