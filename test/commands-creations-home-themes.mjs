@@ -35,6 +35,9 @@ const api = await fakeApi({
   "POST /v1/design-token-themes": r => ({theme_id: randomUUID(), name: r.body.name}),
   "POST /v1/design-token-themes/{theme_id}/apply": () => tokens,
   "POST /v1/design-tokens/current/undo": () => ({...tokens, theme: {kind: "system"}}),
+  "POST /v1/design-tokens/current/builtin-themes/{builtin_id}/apply": r => r.params.builtin_id === "dot"
+    ? {...tokens, theme: {kind: "builtin", id: "dot", version: 15, name: "dot"}}
+    : {status: 200, body: {code: 3000, data: null, error: {message: "Design-token theme source not found", details: {reason: "not_found"}}}},
   "POST /v1/design-tokens/current/reset": () => ({...tokens, theme: {kind: "saved", id: randomUUID(), version: null, is_modified: false}}),
   "DELETE /v1/design-token-themes/{theme_id}": () => null,
   "POST /v1/agents/{agent_id}/artifacts:check": () => ({errors: checkErrors, warnings: []}),
@@ -126,8 +129,12 @@ assert.deepEqual(last("POST /v1/design-token-themes/{theme_id}/apply").body, {ex
 assert.match((await run(["theme", "undo"])).stdout, /default theme/);
 // reset clears edits and keeps the theme; a saved theme deleted while in use is the current look, unsaved
 assert.match((await run(["theme", "reset"])).stdout, /^Cleared your edits; your Rokku is still on your current look \(not saved\)\.$/);
+// not a saved theme: the built-in default dot, at its newest preset (no version sent)
+assert.match((await run(["theme", "apply", "Dot"])).stdout, /^Switched to the default theme, dot\./);
+const builtin = last("POST /v1/design-tokens/current/builtin-themes/{builtin_id}/apply");
+assert.equal(builtin.params.builtin_id, "dot"); assert.deepEqual(builtin.body, {expected_revision: 11, expected_system_version: 2, expected_theme_version: 3});
 const missing = await run(["theme", "apply", "nope"]);
-assert.equal(missing.code, 1); assert.match(missing.stderr, /Saved themes: "Calm", "Bright"/);
+assert.equal(missing.code, 1); assert.match(missing.stderr, /No theme is called "nope". Saved themes: "Calm", "Bright"; the default theme: dot/);
 assert.equal((await run(["theme", "delete", "Calm"])).code, 64);
 await run(["theme", "delete", "Calm", "--yes"]);
 assert.equal(last("DELETE /v1/design-token-themes/{theme_id}").params.theme_id, themes[0].theme_id);
